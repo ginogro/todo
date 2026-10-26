@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Fondo disco claro (coherente con la paleta papel de la app) -->
+  <circle cx="32" cy="32" r="30" fill="#ece9e2" stroke="#d8d4c8" stroke-width="1"/>
+
+  <!-- G de piedra -->
+  <g fill="none" stroke="#3b3e44" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 47 17 A 23 23 0 1 0 47 47"/>
+    <path d="M 31 32 H 47 V 45"/>
+  </g>
+
+  <!-- Grietas y textura de piedra -->
+  <g fill="none" stroke="#23262b" stroke-width="1.4" stroke-linecap="round" opacity="0.8">
+    <path d="M 20 12 L 24 18 L 21 24"/>
+    <path d="M 12 34 L 18 33 L 23 38"/>
+    <path d="M 26 50 L 30 45"/>
+    <path d="M 40 55 L 44 51"/>
+  </g>
+  <g fill="none" stroke="#5f646d" stroke-width="1.2" stroke-linecap="round" opacity="0.6">
+    <path d="M 45 14 L 43 20"/>
+    <path d="M 14 26 L 18 28"/>
+    <path d="M 50 30 L 47 33"/>
+  </g>
+
+  <!-- Resplandor de los circuitos -->
+  <g fill="none" stroke="#2ad4f5" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.22">
+    <path d="M 17 40 h 6 l 4 -4 h 5"/>
+    <path d="M 20 46 h 9 l 3 -3 h 6"/>
+    <path d="M 36 32 h 8 v -5"/>
+    <path d="M 47 41 v -4"/>
+  </g>
+
+  <!-- Trazas de circuito cian -->
+  <g fill="none" stroke="#2ad4f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 17 40 h 6 l 4 -4 h 5"/>
+    <path d="M 20 46 h 9 l 3 -3 h 6"/>
+    <path d="M 36 32 h 8 v -5"/>
+    <path d="M 47 41 v -4"/>
+  </g>
+
+  <!-- Pads de circuito -->
+  <g fill="#2ad4f5">
+    <circle cx="17" cy="40" r="1.8"/>
+    <circle cx="32" cy="36" r="1.8"/>
+    <circle cx="20" cy="46" r="1.8"/>
+    <circle cx="38" cy="43" r="1.8"/>
+    <circle cx="36" cy="32" r="1.8"/>
+    <circle cx="44" cy="27" r="1.8"/>
+    <circle cx="47" cy="41" r="1.8"/>
+  </g>
+</svg>

@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../db/dev.db"
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String    @default("")
+  status      String    @default("activo")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  archivedAt  DateTime?
+
+  groups Group[]
+
+  @@map("projects")
+}
+
+model Group {
+  id          String    @id @default(cuid())
+  projectId   String
+  name        String
+  description String    @default("")
+  sortOrder   Float     @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
+
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  checklists Checklist[]
+
+  @@index([projectId])
+  @@map("groups")
+}
+
+model Checklist {
+  id          String    @id @default(cuid())
+  groupId     String
+  name        String
+  description String    @default("")
+  status      String    @default("pendiente")
+  sortOrder   Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  archivedAt  DateTime?
+
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  tasks  Task[]
+
+  @@index([groupId])
+  @@map("checklists")
+}
+
+model Task {
+  id           String    @id @default(cuid())
+  checklistId  String
+  title        String
+  detail       String    @default("")
+  status       String    @default("pendiente")
+  responsible  String    @default("")
+  sortOrder    Float     @default(0)
+  isFocus      Boolean   @default(false)
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  archivedAt   DateTime?
+
+  checklist   Checklist         @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  history     TaskHistory[]
+
+  dependenciesOut TaskDependency[] @relation("depsOut") // esta tarea depende de...
+  dependenciesIn  TaskDependency[] @relation("depsIn")  // esta tarea bloquea a...
+
+  @@index([checklistId])
+  @@index([status])
+  @@map("tasks")
+}
+
+model TaskDependency {
+  id               String   @id @default(cuid())
+  taskId           String
+  dependsOnTaskId  String
+  createdAt        DateTime @default(now())
+
+  task        Task @relation("depsOut", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn   Task @relation("depsIn", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnTaskId])
+  @@map("task_dependencies")
+}
+
+model TaskHistory {
+  id            String   @id @default(cuid())
+  taskId        String
+  eventType     String
+  previousValue String   @default("")
+  newValue      String   @default("")
+  description   String   @default("")
+  createdAt     DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_history")
+}
+
+model InboxItem {
+  id        String   @id @default(cuid())
+  title     String
+  detail    String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("inbox_items")
+}
