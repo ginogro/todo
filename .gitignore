@@ -6,3 +6,4 @@ next-env.d.ts
 db/dev.db
 db/dev.db-journal
 .DS_Store
+/.idea/workspace.xml
