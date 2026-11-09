@@ -6,6 +6,58 @@ import {
 } from "@/domain/constants";
 import type { ReactNode } from "react";
 
+export function ActionIcon({
+  name,
+}: {
+  name: "edit" | "archive" | "restore" | "delete";
+}) {
+  const paths = {
+    edit: (
+      <>
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+      </>
+    ),
+    archive: (
+      <>
+        <path d="M3 6h18" />
+        <path d="M5 6v14h14V6" />
+        <path d="M9 10h6" />
+        <path d="M4 3h16v3H4z" />
+      </>
+    ),
+    restore: (
+      <>
+        <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+        <path d="M3 3v5h5" />
+      </>
+    ),
+    delete: (
+      <>
+        <path d="M3 6h18" />
+        <path d="M8 6V4h8v2" />
+        <path d="M19 6l-1 14H6L5 6" />
+        <path d="M10 11v5M14 11v5" />
+      </>
+    ),
+  };
+
+  return (
+    <svg
+      className="action-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths[name]}
+    </svg>
+  );
+}
+
 /* ---------- Tarjeta / panel ---------- */
 
 export function Card({
