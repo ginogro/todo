@@ -25,6 +25,7 @@ import {
   EmptyState,
   Muted,
   ChecklistStatusPill,
+  ActionIcon,
   formatDate,
 } from "@/components/ui";
 import { CHECKLIST_STATUS_LABELS, TASK_STATUS_LABELS } from "@/domain/constants";
@@ -123,7 +124,7 @@ export function ChecklistsScreen({
           Gancho”.
         </EmptyState>
       ) : (
-        <div className="stack">
+        <div className="card-grid checklist-card-grid">
           {visible.map((checklist, index) => {
             const isOpen = openIds.has(checklist.id);
             const tasks = tasksByChecklist[checklist.id] ?? [];
@@ -134,7 +135,10 @@ export function ChecklistsScreen({
               (t) => !t.archivedAt && t.status !== "finalizado" && t.status !== "cancelado"
             ).length;
             return (
-              <Card key={checklist.id}>
+              <Card
+                key={checklist.id}
+                className={isOpen ? "entity-card-expanded" : ""}
+              >
                 <CardHeader
                   title={
                     <>
@@ -156,13 +160,13 @@ export function ChecklistsScreen({
                   subtitle={checklist.description || undefined}
                   actions={
                     <>
-                      <Link
-                        className="btn btn-secondary btn-sm"
-                        href={`${groupUrl}/${checklist.id}`}
+                      <Modal
+                        summary={<ActionIcon name="edit" />}
+                        summaryLabel={`Editar ${checklist.name}`}
+                        triggerClassName="icon-btn icon-btn-action"
+                        title={`Editar ${checklist.name}`}
+                        variant="secondary"
                       >
-                        Abrir
-                      </Link>
-                      <Modal summary="Editar" title={`Editar ${checklist.name}`} variant="secondary">
                         <ActionForm action={updateChecklist} submitLabel="Guardar">
                           <input type="hidden" name="id" value={checklist.id} />
                           <Field label="Nombre">
@@ -210,8 +214,13 @@ export function ChecklistsScreen({
                         message={checklist.archivedAt ? "¿Restaurar checklist?" : "¿Archivar checklist?"}
                       >
                         <input type="hidden" name="id" value={checklist.id} />
-                        <button className="btn btn-secondary btn-sm" type="submit">
-                          {checklist.archivedAt ? "Restaurar" : "Archivar"}
+                        <button
+                          className="icon-btn icon-btn-action"
+                          type="submit"
+                          title={checklist.archivedAt ? "Restaurar checklist" : "Archivar checklist"}
+                          aria-label={checklist.archivedAt ? "Restaurar checklist" : "Archivar checklist"}
+                        >
+                          <ActionIcon name={checklist.archivedAt ? "restore" : "archive"} />
                         </button>
                       </ConfirmForm>
                       <ConfirmForm
@@ -220,8 +229,13 @@ export function ChecklistsScreen({
                       >
                         <input type="hidden" name="projectId" value={project.id} />
                         <input type="hidden" name="id" value={checklist.id} />
-                        <button className="btn btn-danger btn-sm" type="submit">
-                          Eliminar
+                        <button
+                          className="icon-btn icon-btn-action icon-btn-danger"
+                          type="submit"
+                          title="Eliminar checklist"
+                          aria-label="Eliminar checklist"
+                        >
+                          <ActionIcon name="delete" />
                         </button>
                       </ConfirmForm>
                     </>
@@ -288,8 +302,8 @@ export function ChecklistsScreen({
       )}
       <Muted>
         Haz clic en ▸ para desplegar un checklist y administrar sus tareas aquí
-        mismo: cambiar estado, reordenar, foco o crear nuevas. “Abrir” lleva a la
-        vista completa con filtros y edición del checklist.
+        mismo: cambiar estado, reordenar, foco o crear nuevas. Haz clic en el
+        nombre para acceder a la vista completa.
       </Muted>
     </>
   );

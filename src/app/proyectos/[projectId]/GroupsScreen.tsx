@@ -3,7 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Checklist, Group, Task } from "@prisma/client";
-import { createGroup, updateGroup, archiveGroup, deleteGroup, moveGroup } from "@/actions";
+import {
+  createGroup,
+  updateGroup,
+  archiveGroup,
+  deleteGroup,
+  moveGroup,
+  updateChecklist,
+  archiveChecklist,
+  deleteChecklist,
+} from "@/actions";
 import { ActionForm, ConfirmForm } from "@/components/forms";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { TaskRows, type RowDep } from "@/components/tasks";
@@ -13,13 +22,15 @@ import {
   Field,
   TextInput,
   TextArea,
-  Button,
+  Select,
   Modal,
   EmptyState,
   Muted,
   ChecklistStatusPill,
+  ActionIcon,
   formatDate,
 } from "@/components/ui";
+import { CHECKLIST_STATUS_LABELS } from "@/domain/constants";
 
 type Project = { id: string; name: string; description: string };
 type ChecklistWithTasks = Checklist & {
@@ -100,7 +111,7 @@ export function GroupsScreen({
           datos”, etc.
         </EmptyState>
       ) : (
-        <div className="stack">
+        <div className="card-grid group-card-grid">
           {visible.map((group, index) => {
             const isGroupOpen = openGroupIds.has(group.id);
             const visibleChecklists = showArchived
@@ -108,7 +119,10 @@ export function GroupsScreen({
               : group.checklists.filter((checklist) => !checklist.archivedAt);
 
             return (
-            <Card key={group.id}>
+            <Card
+              key={group.id}
+              className={isGroupOpen ? "entity-card-expanded" : ""}
+            >
               <CardHeader
                 title={
                   <>
@@ -128,13 +142,13 @@ export function GroupsScreen({
                 subtitle={group.description || undefined}
                 actions={
                   <>
-                    <Link
-                      className="btn btn-secondary btn-sm"
-                      href={`/proyectos/${project.id}/${group.id}`}
+                    <Modal
+                      summary={<ActionIcon name="edit" />}
+                      summaryLabel={`Editar ${group.name}`}
+                      triggerClassName="icon-btn icon-btn-action"
+                      title={`Editar ${group.name}`}
+                      variant="secondary"
                     >
-                      Abrir
-                    </Link>
-                    <Modal summary="Editar" title={`Editar ${group.name}`} variant="secondary">
                       <ActionForm action={updateGroup} submitLabel="Guardar">
                         <input type="hidden" name="id" value={group.id} />
                         <Field label="Nombre">
@@ -173,8 +187,13 @@ export function GroupsScreen({
                       message={group.archivedAt ? "¿Restaurar agrupación?" : "¿Archivar agrupación?"}
                     >
                       <input type="hidden" name="id" value={group.id} />
-                      <button className="btn btn-secondary btn-sm" type="submit">
-                        {group.archivedAt ? "Restaurar" : "Archivar"}
+                      <button
+                        className="icon-btn icon-btn-action"
+                        type="submit"
+                        title={group.archivedAt ? "Restaurar agrupación" : "Archivar agrupación"}
+                        aria-label={group.archivedAt ? "Restaurar agrupación" : "Archivar agrupación"}
+                      >
+                        <ActionIcon name={group.archivedAt ? "restore" : "archive"} />
                       </button>
                     </ConfirmForm>
                     <ConfirmForm
@@ -182,8 +201,13 @@ export function GroupsScreen({
                       message={`¿Eliminar "${group.name}" con todos sus checklists y tareas?`}
                     >
                       <input type="hidden" name="id" value={group.id} />
-                      <button className="btn btn-danger btn-sm" type="submit">
-                        Eliminar
+                      <button
+                        className="icon-btn icon-btn-action icon-btn-danger"
+                        type="submit"
+                        title="Eliminar agrupación"
+                        aria-label="Eliminar agrupación"
+                      >
+                        <ActionIcon name="delete" />
                       </button>
                     </ConfirmForm>
                   </>
@@ -228,9 +252,85 @@ export function GroupsScreen({
                             </div>
                             <div className="nested-checklist-actions">
                               <Muted>{checklist._count.tasks} tarea(s)</Muted>
-                              <Link className="btn btn-secondary btn-sm" href={checklistUrl}>
-                                Abrir
-                              </Link>
+                              <Modal
+                                summary={<ActionIcon name="edit" />}
+                                summaryLabel={`Editar ${checklist.name}`}
+                                triggerClassName="icon-btn icon-btn-action"
+                                title={`Editar ${checklist.name}`}
+                                variant="secondary"
+                              >
+                                <ActionForm action={updateChecklist} submitLabel="Guardar">
+                                  <input type="hidden" name="id" value={checklist.id} />
+                                  <Field label="Nombre">
+                                    <TextInput
+                                      name="name"
+                                      defaultValue={checklist.name}
+                                      required
+                                      maxLength={120}
+                                    />
+                                  </Field>
+                                  <Field label="Descripción">
+                                    <TextArea
+                                      name="description"
+                                      defaultValue={checklist.description}
+                                    />
+                                  </Field>
+                                  <Field label="Estado">
+                                    <Select name="status" defaultValue={checklist.status}>
+                                      {Object.entries(CHECKLIST_STATUS_LABELS).map(
+                                        ([value, label]) => (
+                                          <option key={value} value={value}>
+                                            {label}
+                                          </option>
+                                        )
+                                      )}
+                                    </Select>
+                                  </Field>
+                                </ActionForm>
+                              </Modal>
+                              <ConfirmForm
+                                action={archiveChecklist}
+                                message={
+                                  checklist.archivedAt
+                                    ? "¿Restaurar checklist?"
+                                    : "¿Archivar checklist?"
+                                }
+                              >
+                                <input type="hidden" name="id" value={checklist.id} />
+                                <button
+                                  className="icon-btn icon-btn-action"
+                                  type="submit"
+                                  title={
+                                    checklist.archivedAt
+                                      ? "Restaurar checklist"
+                                      : "Archivar checklist"
+                                  }
+                                  aria-label={
+                                    checklist.archivedAt
+                                      ? "Restaurar checklist"
+                                      : "Archivar checklist"
+                                  }
+                                >
+                                  <ActionIcon
+                                    name={checklist.archivedAt ? "restore" : "archive"}
+                                  />
+                                </button>
+                              </ConfirmForm>
+                              <ConfirmForm
+                                action={deleteChecklist}
+                                message={`¿Eliminar "${checklist.name}" con todas sus tareas?`}
+                              >
+                                <input type="hidden" name="projectId" value={project.id} />
+                                <input type="hidden" name="id" value={checklist.id} />
+                                <button
+                                  className="icon-btn icon-btn-action icon-btn-danger"
+                                  type="submit"
+                                  title="Eliminar checklist"
+                                  aria-label="Eliminar checklist"
+                                >
+                                  <ActionIcon name="delete" />
+                                </button>
+                              </ConfirmForm>
                             </div>
                           </div>
                           {checklist.description ? (

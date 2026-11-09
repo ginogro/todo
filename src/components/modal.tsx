@@ -9,11 +9,15 @@ import type { ReactNode } from "react";
  */
 export function Modal({
   summary,
+  summaryLabel,
+  triggerClassName,
   title,
   children,
   variant = "primary",
 }: {
-  summary: string;
+  summary: ReactNode;
+  summaryLabel?: string;
+  triggerClassName?: string;
   title: string;
   children: ReactNode;
   variant?: "primary" | "secondary" | "danger" | "ghost";
@@ -33,8 +37,10 @@ export function Modal({
     <>
       <button
         type="button"
-        className={`btn btn-${variant}`}
+        className={triggerClassName ?? `btn btn-${variant}`}
         onClick={() => setOpen(true)}
+        title={summaryLabel}
+        aria-label={summaryLabel}
       >
         {summary}
       </button>

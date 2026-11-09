@@ -50,7 +50,7 @@ export function ProjectsScreen({
           No hay proyectos todavía. Crea el primero con “Nuevo proyecto”.
         </EmptyState>
       ) : (
-        <div className="stack">
+        <div className="card-grid project-card-grid">
           {visible.map((project) => (
             <Card key={project.id}>
               <div className="card-header">
