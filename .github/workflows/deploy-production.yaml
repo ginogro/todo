@@ -1,0 +1,150 @@
+name: Deploy Todo Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: todo-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Configure known hosts
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          ssh "$VPS_USER@$VPS_HOST" "bash -s -- '$RELEASE_SHA'" <<'REMOTE'
+          set -Eeuo pipefail
+
+          SHA="$1"
+          APP_ROOT="/opt/todo-production"
+          RELEASE="$APP_ROOT/releases/$SHA"
+          OLD_APP="/var/www/ginorden"
+
+          mkdir -p "$APP_ROOT/releases" "$APP_ROOT/shared/db"
+
+          # Descargar versión exacta
+          git init "$RELEASE"
+          git -C "$RELEASE" remote add origin https://github.com/ginogro/todo.git
+          git -C "$RELEASE" fetch --depth 1 origin "$SHA"
+          git -C "$RELEASE" checkout --detach FETCH_HEAD
+
+          # Instalar dependencias
+          cd "$RELEASE"
+          npm ci
+
+          # Migrar la base SQLite una sola vez
+          if [ ! -f "$APP_ROOT/shared/db/dev.db" ]; then
+            systemctl stop ginorden.service
+
+            if ! cp -a "$OLD_APP/db/." "$APP_ROOT/shared/db/"; then
+              systemctl start ginorden.service
+              exit 1
+            fi
+
+            systemctl start ginorden.service
+          fi
+
+          # Vincular base de datos persistente
+          rm -rf "$RELEASE/db"
+          ln -s "$APP_ROOT/shared/db" "$RELEASE/db"
+
+          # Compilar
+          npm run build
+
+          # Guardar configuración original para rollback inicial
+          if [ ! -f "$APP_ROOT/shared/ginorden.service.original" ]; then
+            cp /etc/systemd/system/ginorden.service \
+              "$APP_ROOT/shared/ginorden.service.original"
+          fi
+
+          # Identificar versión anterior
+          OLD_TARGET=""
+          if [ -L "$APP_ROOT/current" ]; then
+            OLD_TARGET=$(readlink -f "$APP_ROOT/current")
+          fi
+
+          # Cambiar versión activa
+          systemctl stop ginorden.service
+
+          ln -s "$RELEASE" "$APP_ROOT/current.next"
+          mv -Tf "$APP_ROOT/current.next" "$APP_ROOT/current"
+
+          # Configurar servicio
+          cat > /etc/systemd/system/ginorden.service <<'UNIT'
+          [Unit]
+          Description=GinOrden Next.js
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          WorkingDirectory=/opt/todo-production/current
+          Environment=NODE_ENV=production
+          ExecStart=/usr/bin/npm start
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          UNIT
+
+          systemctl daemon-reload
+
+          # Iniciar y comprobar
+          DEPLOY_OK=1
+
+          if systemctl start ginorden.service; then
+            sleep 5
+            if ! curl -fsS --max-time 20 \
+              http://127.0.0.1:3001/ >/dev/null; then
+              DEPLOY_OK=0
+            fi
+          else
+            DEPLOY_OK=0
+          fi
+
+          # Rollback automático si falla
+          if [ "$DEPLOY_OK" -ne 1 ]; then
+            systemctl stop ginorden.service || true
+
+            if [ -n "$OLD_TARGET" ]; then
+              ln -s "$OLD_TARGET" "$APP_ROOT/current.rollback"
+              mv -Tf "$APP_ROOT/current.rollback" "$APP_ROOT/current"
+            else
+              rm -f "$APP_ROOT/current"
+              cp "$APP_ROOT/shared/ginorden.service.original" \
+                /etc/systemd/system/ginorden.service
+            fi
+
+            systemctl daemon-reload
+            systemctl start ginorden.service
+            exit 1
+          fi
+
+          echo "Deploy exitoso: $SHA"
+          REMOTE
