@@ -215,7 +215,7 @@ a:hover {
 }
 
 .card-header {
-  display: flex;
+  display: table-cell;
   justify-content: space-between;
   align-items: flex-start;
   gap: 10px;
